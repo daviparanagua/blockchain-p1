@@ -205,19 +205,28 @@ class Blockchain {
    * 1. You should validate each block using `validateBlock`
    * 2. Each Block should check the with the previousBlockHash
    */
-  validateChain() {
+  async validateChain() {
     let self = this;
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
-      self.chain.forEach((block) => {
-        if(block.height == 0) return; //genesis
+
+      for (const block of self.chain){
+        if(block.height == 0) continue; //genesis
+        const blockValid = await block.validate();
+
+        if(!blockValid){
+            errorLog.push(
+                "Invalid hash in block " + block.height
+              );
+        }
+
         let previousBlock = self.chain[block.height - 1]
         if (block.previousBlockHash != previousBlock.hash) {
           errorLog.push(
             "Hash does not match previousBlock hash in block " + block.height
           );
         }
-      });
+      };
       resolve(errorLog);
     });
   }

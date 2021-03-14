@@ -71,6 +71,7 @@ class Blockchain {
         }
         block.hash = SHA256(JSON.stringify(block)).toString();
         this.chain.push(block);
+        this.validateChain();
         resolve(block);
       } catch {
         reject();
@@ -122,13 +123,14 @@ class Blockchain {
         new Date().getTime().toString().slice(0, -3)
       );
 
-      if (currentTime - timestamp > 300){
+      if (currentTime - timestamp > 300) {
         reject("Too old: new block must be sent in 5 minutes");
-        return
+        return;
       }
 
       if (!bitcoinMessage.verify(message, address, signature)) {
         reject("Invalid signature");
+        return;
       }
       const block = new BlockClass.Block({ star, address });
       self._addBlock(block);
@@ -184,8 +186,8 @@ class Blockchain {
       const blocks = self.chain.forEach((block) => {
         const blockData = block.getBData();
         if (!blockData) return false; // genesis
-        if(blockData.address == address){
-            stars.push(blockData.star)
+        if (blockData.address == address) {
+          stars.push(blockData.star);
         }
       });
 
@@ -207,8 +209,9 @@ class Blockchain {
     let self = this;
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
-      let previousBlock = {};
       self.chain.forEach((block) => {
+        if(block.height == 0) return; //genesis
+        let previousBlock = self.chain[block.height - 1]
         if (block.previousBlockHash != previousBlock.hash) {
           errorLog.push(
             "Hash does not match previousBlock hash in block " + block.height

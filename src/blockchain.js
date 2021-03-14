@@ -71,7 +71,15 @@ class Blockchain {
         }
         block.hash = SHA256(JSON.stringify(block)).toString();
         this.chain.push(block);
-        this.validateChain();
+        const errorLog = await self.validateChain();
+        if (errorLog.length !== 0) {
+          resolve({
+            message: "Invalid Blockchain",
+            error: errorLog,
+            status: false
+          });
+          return;
+        }
         resolve(block);
       } catch {
         reject();
@@ -133,7 +141,7 @@ class Blockchain {
         return;
       }
       const block = new BlockClass.Block({ star, address });
-      self._addBlock(block);
+      await self._addBlock(block);
       resolve(block);
     });
   }
@@ -187,7 +195,7 @@ class Blockchain {
         const blockData = block.getBData();
         if (!blockData) return false; // genesis
         if (blockData.address == address) {
-          stars.push(blockData.star);
+          stars.push(blockData);
         }
       });
 
@@ -209,24 +217,21 @@ class Blockchain {
     let self = this;
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
-
-      for (const block of self.chain){
-        if(block.height == 0) continue; //genesis
+      for (const block of self.chain) {
+        if (block.height == 0) continue; //genesis
         const blockValid = await block.validate();
 
-        if(!blockValid){
-            errorLog.push(
-                "Invalid hash in block " + block.height
-              );
+        if (!blockValid) {
+          errorLog.push("Invalid hash in block " + block.height);
         }
 
-        let previousBlock = self.chain[block.height - 1]
+        let previousBlock = self.chain[block.height - 1];
         if (block.previousBlockHash != previousBlock.hash) {
           errorLog.push(
             "Hash does not match previousBlock hash in block " + block.height
           );
         }
-      };
+      }
       resolve(errorLog);
     });
   }

@@ -122,8 +122,10 @@ class Blockchain {
         new Date().getTime().toString().slice(0, -3)
       );
 
-      if (currentTime - timestamp > 300)
+      if (currentTime - timestamp > 300){
         reject("Too old: new block must be sent in 5 minutes");
+        return
+      }
 
       if (!bitcoinMessage.verify(message, address, signature)) {
         reject("Invalid signature");
